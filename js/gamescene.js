@@ -9,13 +9,17 @@ GamePhysics = pc.systems.Physics.extend( 'GameplayPhysics',{},
 {
     onCollisionStart : function( aType, bType, entityA, entityB, fixtureAType, fixtureBType, contact )
     {
-        if( aType == pc.BodyType.ENTITY && bType == pc.BodyType.ENTITY ) {
-            if( entityA.hasTag('BALL') && entityB.hasTag('PADDLE')) {
-                var bp = entityA.getComponent( 'physics' );
-                bp.setLinearVelocity(bp.getLinearVelocity( ).x, -bp.getLinearVelocity().y);
+        if(aType == pc.BodyType.ENTITY && bType == pc.BodyType.ENTITY) {
+            if(entityA.hasTag('BALL') && entityB.hasTag('PADDLE')) {
+                var bp = entityA.getComponent('physics');
+                var xvel = bp.getLinearVelocity().x;
+                var yvel = bp.getLinearVelocity().y;
+                bp.setLinearVelocity(xvel, -yvel);
             } else if( entityA.hasTag('BALL') && entityB.hasTag('WALL') ) {
-                var bp = entityA.getComponent( 'physics' );
-                bp.setLinearVelocity(-bp.getLinearVelocity( ).x, bp.getLinearVelocity().y);
+                var bp = entityA.getComponent('physics');
+                var xvel = bp.getLinearVelocity().x;
+                var yvel = bp.getLinearVelocity().y;
+                bp.setLinearVelocity(-xvel, yvel);
             }
         }
     },
@@ -26,8 +30,6 @@ GamePhysics = pc.systems.Physics.extend( 'GameplayPhysics',{},
             if( entityB.hasTag('PADDLE')) {
                 entityB.getComponent('physics').setCollisionMask( CollisionType.BALL | CollisionType.WALL );
             } else if(entityB.hasTag('OPPONENT')){
-                //if helthbar empty then gameover
-
                 entityA.remove();
                 entityA.active=false;
                 pc.device.game.gameScene.gameOver = true;
@@ -35,11 +37,9 @@ GamePhysics = pc.systems.Physics.extend( 'GameplayPhysics',{},
                 pc.device.game.gameScene.opponentScore.getComponent('text').text[0] = opponentScore + 1;
             } else if(entityB.hasTag('PLAYER')) {
                 entityA.remove();
-                //if helthbar empty then gameover
                 entityA.active=false;
                 pc.device.game.gameScene.gameOver = true;
-
-								var playerScore = parseInt(pc.device.game.gameScene.playerScore.getComponent('text').text[0]);
+				var playerScore = parseInt(pc.device.game.gameScene.playerScore.getComponent('text').text[0]);
                 pc.device.game.gameScene.playerScore.getComponent('text').text[0] = playerScore + 1;
             }
         }
@@ -56,6 +56,7 @@ GameScene = pc.Scene.extend('GameScene',{},
     scoreboard:null,
     ai:false,
     gameOver:false,
+
     init:function ()
     {
         var xb = 20;
@@ -70,16 +71,14 @@ GameScene = pc.Scene.extend('GameScene',{},
         var gamephy = new GamePhysics({debug:true});
         this.gameLayer.addSystem(gamephy);
         this.gameLayer.addSystem(new pc.systems.Render());
-        //this.gameLayer.addSystem(new HealthSystem());
 
         this.gameBoard = pc.Entity.create(this.gameLayer);
         this.gameBoard.addComponent(pc.components.Spatial.create({ x: xb, y: yb, w: wb, h: hb }));
         this.gameBoard.addComponent(pc.components.Rect.create({ lineColor:'#e3e3e3', lineWidth:3, color:'#000000'}));
 
         this.scoreboard = pc.Entity.create(this.gameLayer);
-    this.scoreboard.addComponent(pc.components.Spatial.create({x:885,y:20,w:75,h:700}));
+        this.scoreboard.addComponent(pc.components.Spatial.create({x:885,y:20,w:75,h:700}));
         this.scoreboard.addComponent(pc.components.Rect.create({ lineColor:'#e3e3e3', lineWidth:3, color:'#000000'}));
-        //this.scoreboard.addComponent(Health.create(100,10,100));
 
         this.ball = pc.Entity.create(this.gameLayer);
         this.ball.addComponent(pc.components.Spatial.create({x:50, y:100, w:25, h:25,dir:45}));
@@ -98,8 +97,7 @@ GameScene = pc.Scene.extend('GameScene',{},
         this.player.addComponent(pc.components.Spatial.create({ x:200, y:22, w:150, h:12 }));
         this.player.addComponent(pc.components.Rect.create({ lineColor:'#ffffff', lineWidth:1,  color:'#ffffff'}));
         this.player.addComponent(pc.components.Physics.create({
-
-collisionCategory:CollisionType.PADDLE,
+            collisionCategory:CollisionType.PADDLE,
             collisionMask:CollisionType.BALL | CollisionType.WALL,
             fixedRotation: true,
             linearDamping: 0.5,
@@ -113,9 +111,9 @@ collisionCategory:CollisionType.PADDLE,
         this.opponent.addComponent(pc.components.Physics.create({
             collisionCategory:CollisionType.PADDLE,
             collisionMask:CollisionType.BALL | CollisionType.WALL,
-            fixedRotation : true,
-            linearDamping : 0.5,
-            mass : 100
+            fixedRotation: true,
+            linearDamping: 0.5,
+            mass: 100
         }));
         this.opponent.addTag('PADDLE');
 
@@ -137,11 +135,11 @@ collisionCategory:CollisionType.PADDLE,
 
     },
 
-process: function()
+    process: function()
     {
-        //console.log(pc.device.game.gameScene.opponent);
         if (this.gameOver)
             return false;
+        
         if(pc.device.input.isInputState(this,'player')) {
             if ((pc.device.game.gameScene.ai == false) ) {
                 if (pc.device.input.mousePos.x <= 770 && pc.device.input.mousePos.x >= 70) {
@@ -164,32 +162,8 @@ process: function()
         this._super();
     },
 
-    /*process: function()
-    {
-        //console.log(pc.device.game.gameScene.opponent);
-        if(pc.device.input.isInputState(this,'player')) {
-            if ((pc.device.game.gameScene.opponent === 'player') ) {
-                if (pc.device.input.mousePos.x <= 770 && pc.device.input.mousePos.x >= 70) {
-                    this.opponent.getComponent('spatial').pos.x = pc.device.input.mousePos.x-50;
-                    this.player.getComponent('spatial').pos.x = pc.device.input.mousePos.x-50;
-                }
-            } else if ((pc.device.game.gameScene.opponent === 'ai')) {
-                var b = this.ball.getComponent('spatial');
-                if (pc.device.input.mousePos.x <= 770 && pc.device.input.mousePos.x >= 70) {
-                    this.player.getComponent('spatial').pos.x = pc.device.input.mousePos.x-50;
-                }
-                if ( b.pos.x <= 725 && b.pos.x >= 100 ) {
-                    this.opponent.getComponent('spatial').pos.x = b.pos.x-50;
-                }
-            }
-        }
-
-        pc.device.ctx.clearRect( 0, 0, pc.device.canvas.width, pc.device.canvas.height );
-
-        this._super();
-    },*/
-
-createWall:function (layer, x, y, w, h)
+    
+    createWall:function (layer, x, y, w, h)
     {
         var e = pc.Entity.create(layer);
         e.addTag('WALL');
@@ -198,9 +172,9 @@ createWall:function (layer, x, y, w, h)
             collisionCategory: CollisionType.WALL,
             collisionMask: CollisionType.BALL | CollisionType.PADDLE,
             immovable: true
-
         }));
     },
+    
     createScoreWall: function(layer, paddle, x, y, w, h)
     {
         var e = pc.Entity.create( layer );
@@ -214,9 +188,9 @@ createWall:function (layer, x, y, w, h)
         e.addComponent(pc.components.Spatial.create({ x: x, y: y, w: w, h: h }));
 
         e.addComponent( pc.components.Physics.create({
-            collisionCategory : CollisionType.WALL,
-            collisionMask : CollisionType.BALL,
-            immovable : true,
+            collisionCategory: CollisionType.WALL,
+            collisionMask: CollisionType.BALL,
+            immovable: true,
         }));
     },
 });
